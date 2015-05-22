@@ -349,8 +349,6 @@ namespace LeeSin
                             obj.IsAlly && !obj.IsMe &&
                             !(obj.Name.IndexOf("turret", StringComparison.InvariantCultureIgnoreCase) >= 0)&&
                             obj.Distance(t.Position)<_player.Distance(t.Position)-200 && obj.Distance(_player.Position)<700);
-            if (jumpObject != null&& !(t.HasBuff("BlindMonkQOne", true) || t.HasBuff("blindmonkqonechaos", true)))
-                CastW(jumpObject);
 
             if (_config.Item("UseIgnitecombo").GetValue<bool>() && _igniteSlot != SpellSlot.Unknown &&
                 _player.Spellbook.CanUseSpell(_igniteSlot) == SpellState.Ready)
@@ -383,7 +381,7 @@ namespace LeeSin
                     _r.CastOnUnit(t);
             }
 
-            if (t.IsValidTarget() && _q.IsReady()&&( jumpObject==null||WStage!=WCastStage.First))
+            if (t.IsValidTarget() && _q.IsReady())
             {
                 CastQ1(t);
                 if (t.HasBuff("BlindMonkQOne", true) || t.HasBuff("blindmonkqonechaos", true) && (ComboDamage(t) > t.Health || t.Distance(_player.Position) > 350 || Environment.TickCount > qcasttime+2500))   
