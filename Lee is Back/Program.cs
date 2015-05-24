@@ -87,9 +87,7 @@ namespace LeeSin
                 _smitehpSlot = _player.GetSpellSlot(SmitetypeHp());
 
 
-                var enemy = from hero in ObjectManager.Get<Obj_AI_Hero>()
-                            where hero.IsEnemy == true
-                            select hero;
+
 
                 _config = new Menu("Lee Is Back", "Lee Is Back", true);
 
@@ -176,7 +174,7 @@ namespace LeeSin
                 _config.SubMenu("Farm")
                     .SubMenu("LastHit")
                     .AddItem(
-                        new MenuItem("ActiveLast", "LastHit!").SetValue(new KeyBind("X".ToCharArray()[0], KeyBindType.Press)));
+                        new MenuItem("Activelast", "LastHit!").SetValue(new KeyBind("X".ToCharArray()[0], KeyBindType.Press)));
 
                 _config.SubMenu("Farm").AddSubMenu(new Menu("Jungle", "Jungle"));
                 _config.SubMenu("Farm")
@@ -277,22 +275,25 @@ namespace LeeSin
 
         private static void OnWndProc(WndEventArgs args)
         {
-            if (args.Msg == 515)
+            if (args.Msg == 515 || args.Msg == 513)
             {
-                insdirec = Game.CursorPos;
-                instypecheck = 1;
-            }
-            var boohoo = ObjectManager.Get<Obj_AI_Base>()
-                     .OrderBy(obj => obj.Distance(_player.ServerPosition))
-                     .FirstOrDefault(
-                         obj =>
-                             obj.IsAlly && !obj.IsMe && !obj.IsMinion &&
-                              Game.CursorPos.Distance(obj.ServerPosition) <= 150);
+                if (args.Msg == 515)
+                {
+                    insdirec = Game.CursorPos;
+                    instypecheck = 1;
+                }
+                var boohoo = ObjectManager.Get<Obj_AI_Base>()
+                         .OrderBy(obj => obj.Distance(_player.ServerPosition))
+                         .FirstOrDefault(
+                             obj =>
+                                 obj.IsAlly && !obj.IsMe && !obj.IsMinion &&
+                                  Game.CursorPos.Distance(obj.ServerPosition) <= 150);
 
-            if (args.Msg == 513&& boohoo!=null  )
-            {
-                insobj = boohoo;
-                   instypecheck=2;
+                if (args.Msg == 513 && boohoo != null)
+                {
+                    insobj = boohoo;
+                    instypecheck = 2;
+                }
             }
 
         }
@@ -926,7 +927,7 @@ namespace LeeSin
 
         private static void LastHit()
         {
-            var allMinionsQ = MinionManager.GetMinions(ObjectManager.Player.ServerPosition, _q.Range, MinionTypes.All);
+            var allMinionsQ = MinionManager.GetMinions(_player.ServerPosition, _q.Range, MinionTypes.All);
             var useQ = _config.Item("UseQLH").GetValue<bool>();
             foreach (var minion in allMinionsQ)
             {
