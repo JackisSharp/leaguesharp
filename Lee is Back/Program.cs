@@ -599,7 +599,7 @@ namespace LeeSin
              }
 
 
-            insecpos = t.ServerPosition.Extend(insdirec, -250);
+            insecpos = t.ServerPosition.Extend(insdirec, -300);
             if ((_player.ServerPosition.Distance(insecpos) > 600 || inscount + 500 > Environment.TickCount) && t != null && t.IsValidTarget() && QStage == QCastStage.First)
             {
                 var qpred = _q.GetPrediction(t);
@@ -641,7 +641,7 @@ namespace LeeSin
                 counttime = Environment.TickCount;
                 canmove = 0;
             }
-            if (t.ServerPosition.Distance(insdirec) < _player.Position.Distance(insdirec) && WStage != WCastStage.First)
+            if (t.ServerPosition.Distance(insdirec)+100 < _player.Position.Distance(insdirec) && WStage != WCastStage.First)
             {
                 _r.CastOnUnit(t);
                 inscount = Environment.TickCount;
@@ -893,10 +893,10 @@ namespace LeeSin
 
             foreach (var minion in allMinionsQ)
             {
-                if (!Orbwalking.InAutoAttackRange(minion) &&
+                if (!Orbwalking.InAutoAttackRange(minion) &&useQl&&
                     minion.Health < _player.GetSpellDamage(minion, SpellSlot.Q)*0.70)
                     _q.Cast(minion);
-                else if (Orbwalking.InAutoAttackRange(minion) &&
+                else if (Orbwalking.InAutoAttackRange(minion) && useQl&&
                     minion.Health > _player.GetSpellDamage(minion, SpellSlot.Q) * 2)
                     CastQ1(minion);
             }
@@ -931,7 +931,7 @@ namespace LeeSin
             var useQ = _config.Item("UseQLH").GetValue<bool>();
             foreach (var minion in allMinionsQ)
             {
-                if (QStage == QCastStage.First && _player.Distance(minion.ServerPosition) < _q.Range &&
+                if (QStage == QCastStage.First && useQ &&_player.Distance(minion.ServerPosition) < _q.Range &&
                     minion.Health < 0.90 * _player.GetSpellDamage(minion, SpellSlot.Q))
                 {
                     CastQ1(minion);
