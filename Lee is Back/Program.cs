@@ -41,7 +41,6 @@ namespace LeeSin
         private static Vector3 firstpos;
         private static int canmove=1;
         private static int instypecheck;
-        private static float wardtime;
         private static float inscount;
         private static float counttime;
         private static float qcasttime;
@@ -50,6 +49,8 @@ namespace LeeSin
         private static float ecasttime;
         private static float casttime;
         private static bool walljump;
+        private static bool checker;
+        private static int bCount;
  
 
 
@@ -343,7 +344,7 @@ namespace LeeSin
         }
         private static bool Passive()
         {
-            if (_player.HasBuff("blindmonkpassive_cosmetic", true))
+            if (_player.HasBuff("blindmonkpassive_cosmetic"))
             {
                 return true;
             }
@@ -353,7 +354,6 @@ namespace LeeSin
 
         private static void Combo(Obj_AI_Hero t)
         {
-            if (t == null) return;
 
 
             if (_config.Item("UseIgnitecombo").GetValue<bool>() && _igniteSlot != SpellSlot.Unknown &&
@@ -368,10 +368,10 @@ namespace LeeSin
             {
                 if (WStage == WCastStage.First || !Passive())
                     CastSelfW();
-                if (WStage == WCastStage.Second && (!Passive() ||  Environment.TickCount> wcasttime + 2500))
+                if (WStage == WCastStage.Second && (!Passive() || Environment.TickCount > wcasttime + 2500))
                     _w.Cast();
             }
-            if (_config.Item("UseSmitecombo").GetValue<bool>() &&_smitedmgSlot != SpellSlot.Unknown &&
+            if (_config.Item("UseSmitecombo").GetValue<bool>() && _smitedmgSlot != SpellSlot.Unknown &&
                 _player.Spellbook.CanUseSpell(_smitedmgSlot) == SpellState.Ready)
             {
                 if (ComboDamage(t) > t.Health)
@@ -379,28 +379,29 @@ namespace LeeSin
                     _player.Spellbook.CastSpell(_smitedmgSlot, t);
                 }
             }
-            if (ComboDamage(t) > t.Health  && t.Distance(_player.Position) < 950 && _r.IsReady())
+            if (ComboDamage(t) > t.Health && t.Distance(_player.Position) < 950 && _r.IsReady())
             {
                 if (t.Distance(_player.Position) > 500)
                     WardJump(t.Position, true, true, true);
-                if (t.Distance(_player.Position) <= 375 && (t.HasBuff("BlindMonkQOne", true) || t.HasBuff("blindmonkqonechaos", true) || _player.GetSpellDamage(t, SpellSlot.R)>t.Health))
+                if (t.Distance(_player.Position) <= 375 && (t.HasBuff("BlindMonkQOne") || t.HasBuff("blindmonkqonechaos") || _player.GetSpellDamage(t, SpellSlot.R) > t.Health))
                     _r.CastOnUnit(t);
             }
 
             if (t.IsValidTarget() && _q.IsReady())
             {
                 CastQ1(t);
-                if (t.HasBuff("BlindMonkQOne", true) || t.HasBuff("blindmonkqonechaos", true) && (ComboDamage(t) > t.Health || t.Distance(_player.Position) > 350 || Environment.TickCount > qcasttime+2500))   
+                if (t.HasBuff("BlindMonkQOne") || t.HasBuff("blindmonkqonechaos") && (ComboDamage(t) > t.Health || t.Distance(_player.Position) > 350 || Environment.TickCount > qcasttime + 2500))
                     _q.Cast();
             }
 
             CastECombo();
             UseItemes(t);
-            
+
         }
         private static void Harass(Obj_AI_Hero t)
         {
             if (t == null) return;
+
             var jumpObject =ObjectManager.Get<Obj_AI_Base>()
                 .OrderBy(obj => obj.Distance(firstpos))
                 .FirstOrDefault(obj =>
@@ -412,7 +413,7 @@ namespace LeeSin
                 CastECombo();
             if (_config.Item("UseQ1Har").GetValue<bool>())
                 CastQ1(t);
-            if (_config.Item("UseQ2Har").GetValue<bool>() && (t.HasBuff("BlindMonkQOne", true) || t.HasBuff("blindmonkqonechaos", true)) && jumpObject != null&& WStage==WCastStage.First)
+            if (_config.Item("UseQ2Har").GetValue<bool>() && (t.HasBuff("BlindMonkQOne") || t.HasBuff("blindmonkqonechaos")) && jumpObject != null&& WStage==WCastStage.First)
             {
                 _q.Cast();
                 q2casttime = Environment.TickCount;
@@ -469,13 +470,13 @@ namespace LeeSin
         }
          private static void placeward(Vector3 castpos)
         {
-            if (WStage != WCastStage.First || Environment.TickCount < wardtime + 500)
+            if (WStage != WCastStage.First)
             {
                 return;
             }
             var ward = Items.GetWardSlot();
             _player.Spellbook.CastSpell(ward.SpellSlot, castpos);
-            wardtime = Environment.TickCount;
+          
             
         }
 
@@ -493,11 +494,13 @@ namespace LeeSin
                 else if (_player.Distance(Game.CursorPos) >= 700 || walljump == true)
                 {
 
-                    if (Game.CursorPos.Distance(wallcheck) > 150)
+                    if (Game.CursorPos.Distance(wallcheck) > 50)
+                    {
                         walljump = false;
-                        for (var i = 0; i < 10; i++)
+                        checker=false;
+                        for (var i = 0; i < 40; i++)
                         {
-                            var p = Game.CursorPos.Extend(_player.Position, 40 * i);
+                            var p = Game.CursorPos.Extend(_player.Position, 10 * i);
                             if (NavMesh.GetCollisionFlags(p).HasFlag(CollisionFlags.Wall))
                             {
                                 jumppoint = p;
@@ -508,25 +511,33 @@ namespace LeeSin
 
                             }
                         }
-                 
-                    if (walljump == true)
-                    {
-                        foreach (
-                          var qPosition in
-                            GetPossibleJumpPositions(jumppoint)
-                            .OrderBy(qPosition => qPosition.Distance(jumppoint)))
-                            if ( _player.Position.Distance(qPosition) < _player.Position.Distance(jumppoint))
-                            {
-                                movepoint = qPosition;
-                                if (movepoint.Distance(jumppoint) > 550)
-                                    wpos = movepoint.Extend(jumppoint, 550);
-                                else
-                                    wpos = jumppoint;
 
+
+                        if (walljump == true)
+                        {
+                            foreach (
+                              var qPosition in
+                                GetPossibleJumpPositions(jumppoint)
+                                .OrderBy(qPosition => qPosition.Distance(jumppoint)))
+                                {
+                                if (_player.Position.Distance(qPosition) < _player.Position.Distance(jumppoint))
+                                {
+                                    movepoint = qPosition;
+                                    if (movepoint.Distance(jumppoint) > 600)
+                                        wpos = movepoint.Extend(jumppoint, 595);
+                                    else
+                                        wpos = jumppoint;
+
+                                    break;
+                                }
+                                if (qPosition == null)
+                                    movepoint = jumppoint;
+                                checker = true;
                                 break;
                             }
 
 
+                        }
                     }
                     var jumpObj = ObjectManager.Get<Obj_AI_Base>()
                          .OrderBy(obj => obj.Distance(_player.ServerPosition))
@@ -619,7 +630,7 @@ namespace LeeSin
             }
             if (QStage == QCastStage.Second)
             {
-                var enemy = ObjectManager.Get<Obj_AI_Base>().FirstOrDefault(unit => unit.IsEnemy && (unit.HasBuff("BlindMonkQOne", true) || unit.HasBuff("blindmonkqonechaos", true)));
+                var enemy = ObjectManager.Get<Obj_AI_Base>().FirstOrDefault(unit => unit.IsEnemy && (unit.HasBuff("BlindMonkQOne") || unit.HasBuff("blindmonkqonechaos")));
                 if (enemy.Position.Distance(insecpos) < 550)
                 {
                     _q.Cast();
@@ -952,6 +963,7 @@ namespace LeeSin
             if (mobs.Count > 0)
             {
                 var mob = mobs[0];
+                    
                 if (useItemsJ && _tiamat.IsReady() && _player.Distance(mob.ServerPosition) < _tiamat.Range)
                 {
                     _tiamat.Cast();
@@ -960,7 +972,7 @@ namespace LeeSin
                 {
                     _hydra.Cast();
                 }
-                if (QStage == QCastStage.Second && (mob.Health < _q.GetDamage(mob) && ((mob.HasBuff("BlindMonkQOne", true) || mob.HasBuff("blindmonkqonechaos", true))) || Environment.TickCount > qcasttime + 2700 || ((Environment.TickCount > casttime + 200 && !Passive()))))
+                if (QStage == QCastStage.Second && (mob.Health < _q.GetDamage(mob) && ((mob.HasBuff("BlindMonkQOne") || mob.HasBuff("blindmonkqonechaos"))) || Environment.TickCount > qcasttime + 2700 || ((Environment.TickCount > casttime + 200 && !Passive()))))
                     _q.Cast();
                 if (WStage == WCastStage.Second && ((Environment.TickCount > casttime + 200 && !Passive()) || Environment.TickCount > wcasttime + 2700))
                     _w.Cast();
@@ -1005,6 +1017,12 @@ namespace LeeSin
         private static void Drawing_OnDraw(EventArgs args)
         
         {
+            if (checker)
+            {
+                Drawing.DrawText(Drawing.WorldToScreen(jumppoint)[0] + 50,
+                                Drawing.WorldToScreen(jumppoint)[1] + 40, Color.Red,
+                                "NOT JUMPABLE");
+            }
             if (_config.Item("wjump").GetValue<KeyBind>().Active)
             {
                 Render.Circle.DrawCircle(jumppoint, 50, System.Drawing.Color.Red);
